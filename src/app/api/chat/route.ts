@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-interface Product {
-  name: string;
-  price: number;
-  category: string;
-  stockQuantity: number;
-  description: string;
-}
+import connectDB from '@/lib/mongo';
+import Product from '@/models/Product';
 
 // Validate required environment variables
 if (!process.env.GEMMA_API_KEY) {
@@ -16,71 +10,180 @@ if (!process.env.GEMMA_API_KEY) {
 const GEMMA_API_KEY = process.env.GEMMA_API_KEY;
 const GEMMA_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
+interface ProductData {
+  _id: string;
+  name: string;
+  price: number;
+  description: string;
+  category: string;
+  tags: string[];
+  stockQuantity: number;
+  sku: string;
+  featured: boolean;
+  isActive: boolean;
+}
+
+
+
+// Product matching and search functions
+function findRelevantProducts(products: ProductData[], userMessage: string): ProductData[] {
+  const message = userMessage.toLowerCase();
+  const words = message.split(/\s+/).filter(word => word.length > 2);
+  
+  // Scoring system for product relevance
+  const scoredProducts = products.map(product => {
+    let score = 0;
+    
+    // Exact name match (highest priority)
+    if (message.includes(product.name.toLowerCase())) {
+      score += 100;
+    }
+    
+    // Partial name match
+    if (words.some(word => product.name.toLowerCase().includes(word))) {
+      score += 50;
+    }
+    
+    // Category match
+    if (message.includes(product.category.toLowerCase())) {
+      score += 30;
+    }
+    
+    // Tag matches
+    product.tags.forEach(tag => {
+      if (message.includes(tag.toLowerCase())) {
+        score += 20;
+      }
+    });
+    
+    // Description keyword matches
+    const descriptionWords = product.description.toLowerCase().split(/\s+/);
+    words.forEach(word => {
+      if (descriptionWords.includes(word)) {
+        score += 10;
+      }
+    });
+    
+    // Price range queries
+    const priceMatch = message.match(/(\d+)\s*(?:dollars?|usd|\$)/i);
+    if (priceMatch) {
+      const targetPrice = parseInt(priceMatch[1]);
+      if (Math.abs(product.price - targetPrice) <= 50) {
+        score += 15;
+      }
+    }
+    
+    // Stock availability queries
+    if (message.includes('available') || message.includes('stock') || message.includes('in stock')) {
+      if (product.stockQuantity > 0) {
+        score += 5;
+      }
+    }
+    
+    return { product, score };
+  });
+  
+  // Filter and sort by relevance score
+  return scoredProducts
+    .filter(item => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.product);
+}
+
+function generateProductContext(products: ProductData[], relevantProducts: ProductData[]): string {
+  let context = '';
+  
+  if (relevantProducts.length > 0) {
+    context += `\n\nRelevant products found for your query:\n`;
+    relevantProducts.slice(0, 5).forEach(product => {
+      context += `• ${product.name} - $${product.price.toFixed(2)} (${product.category})\n`;
+      context += `  Stock: ${product.stockQuantity > 0 ? `${product.stockQuantity} available` : 'Out of stock'}\n`;
+      context += `  SKU: ${product.sku}\n`;
+      if (product.featured) {
+        context += `  ⭐ Featured Product\n`;
+      }
+      context += `  Description: ${product.description.substring(0, 100)}${product.description.length > 100 ? '...' : ''}\n\n`;
+    });
+  } else {
+    context += `\n\nAvailable product categories:\n`;
+    const categories = [...new Set(products.map(p => p.category))];
+    context += categories.map(cat => `• ${cat}`).join('\n');
+    context += `\n\nTotal products available: ${products.length}`;
+  }
+  
+  return context;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { message, context, products, currentProducts, searchQuery } = await request.json();
+    const { message } = await request.json();
 
-    if (!message) {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+    if (!message || typeof message !== 'string') {
+      return NextResponse.json({ error: 'Valid message is required' }, { status: 400 });
     }
 
-    // Create product context for the AI
-    let productContext = '';
-    if (products && products.length > 0) {
-      // If user is asking about a specific product, prioritize matching products
-      let relevantProducts = products;
-      if (searchQuery) {
-        const queryTerms = searchQuery.split(' ').filter((term: string) => term.length > 2);
-        relevantProducts = products.filter((p: Product) => 
-          queryTerms.some((term: string) => 
-            p.name.toLowerCase().includes(term) || 
-            p.description.toLowerCase().includes(term) ||
-            p.category.toLowerCase().includes(term)
-          )
-        );
-        
-        // If no exact matches, provide a helpful response
-        if (relevantProducts.length === 0) {
-          relevantProducts = products; // Show all products when no match found
-          productContext = `\n\nUser is asking about: "${searchQuery}"\nNo exact product found with that name. Here are our available products:\n`;
-        } else {
-          productContext = `\n\nUser is asking about: "${searchQuery}"\nRelevant products found:\n`;
-        }
-      } else {
-        productContext = `\n\nCurrent Products Available:\n`;
-      }
-      
-      productContext += `${relevantProducts.map((p: Product) => 
-        `- ${p.name}: $${p.price.toFixed(2)} (${p.category}, Stock: ${p.stockQuantity})`
-      ).join('\n')}\n\nTotal Products: ${currentProducts || products.length}`;
+    // Connect to database and fetch all active products
+    await connectDB();
+    const products = (await Product.find({ isActive: true })
+      .select('name price description category tags stockQuantity sku featured isActive')
+      .lean()) as unknown as ProductData[];
+
+    if (!products || products.length === 0) {
+      return NextResponse.json({ 
+        response: "I'm sorry, but I don't have access to our product catalog at the moment. Please contact our support team for assistance." 
+      });
     }
 
-    const systemPrompt = `You are a helpful customer service assistant for KKG E-Commerce, an online store specializing in Electronics. 
+    // Find relevant products based on user message
+    const relevantProducts = findRelevantProducts(products, message);
+    const productContext = generateProductContext(products, relevantProducts);
 
-Context: ${context || 'KKG E-Commerce - specializing in Technology products.'}
+    // Determine response type based on user intent
+    let responseType = 'general';
+    const messageLower = message.toLowerCase();
+    
+    if (messageLower.includes('price') || messageLower.includes('cost') || messageLower.includes('how much')) {
+      responseType = 'pricing';
+    } else if (messageLower.includes('stock') || messageLower.includes('available') || messageLower.includes('in stock')) {
+      responseType = 'availability';
+    } else if (messageLower.includes('feature') || messageLower.includes('spec') || messageLower.includes('detail')) {
+      responseType = 'features';
+    } else if (messageLower.includes('buy') || messageLower.includes('purchase') || messageLower.includes('order')) {
+      responseType = 'purchase';
+    } else if (relevantProducts.length > 0) {
+      responseType = 'product_info';
+    }
 
-Your role:
-- Help customers with product inquiries about Electronics
-- Provide information about features, pricing, and availability using the current product data
-- When customers ask about specific products, search through the provided product list and give detailed information
-- If a product name is mentioned (like "Dragon"), search for it in the product list and provide information
-- If no exact match is found, simply state that the product is not available and list some similar products from our inventory
-- Do not ask for clarification or suggest they provide more context - just be direct and helpful
-- Assist with general shopping questions
-- Direct customers to contact support for complex issues
-- Be friendly, professional, and concise
-- If asked about products not in our categories, politely redirect to our specialties
-- For technical issues or specific order questions, suggest contacting support directly
-- Use the product information provided to give accurate, up-to-date responses
+    const systemPrompt = `You are an intelligent customer service assistant for KKG E-Commerce, specializing in Electronics and Technology products.
 
-Owner contact:
-- Côte d'Ivoire: +225 07 87 94 22 88 (WhatsApp)
-- India: +91 99018 84675 (WhatsApp)
+Your capabilities:
+- Provide detailed information about products based on user queries
+- Answer questions about pricing, availability, and features
+- Help customers find the right products for their needs
+- Provide accurate stock information and pricing
+- Guide customers through the purchasing process
+- Be friendly, professional, and helpful
+
+Response guidelines:
+- Keep responses concise but informative (50-150 words)
+- Always mention specific product names, prices, and stock levels when relevant
+- If a product is out of stock, suggest alternatives
+- For pricing questions, always include the exact price
+- For availability questions, clearly state stock status
+- If no specific product matches, suggest similar products or categories
+- Direct complex issues to support
+
+Contact Information:
+- WhatsApp (Côte d'Ivoire): +225 07 87 94 22 88
+- WhatsApp (India): +91 99018 84675
 - Email: kouadioguillaumek287@gmail.com
 
-Keep responses helpful but brief (under 150 words when possible).
+Current product catalog:${productContext}
 
-${productContext}`;
+User query type: ${responseType}
+User message: "${message}"
+
+Provide a helpful, accurate response based on the product information above.`;
 
     const response = await fetch(GEMMA_API_URL, {
       method: 'POST',
@@ -95,26 +198,40 @@ ${productContext}`;
         messages: [
           {
             role: 'system',
-            content: systemPrompt && context
+            content: systemPrompt
           },
           {
             role: 'user',
             content: message
           }
         ],
-        max_tokens: 300,
+        max_tokens: 400,
         temperature: 0.7,
       }),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemma API error:', response.status, errorText);
       throw new Error(`Gemma API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const botResponse = data.choices?.[0]?.message?.content || 'I apologize, but I\'m having trouble processing your request right now. Please try again or contact our support team directly.';
+    const botResponse = data.choices?.[0]?.message?.content || 
+      'I apologize, but I\'m having trouble processing your request right now. Please try again or contact our support team directly.';
 
-    return NextResponse.json({ response: botResponse });
+    return NextResponse.json({ 
+      response: botResponse,
+      relevantProducts: relevantProducts.slice(0, 3).map(p => ({
+        id: p._id,
+        name: p.name,
+        price: p.price,
+        category: p.category,
+        stockQuantity: p.stockQuantity,
+        sku: p.sku
+      }))
+    });
+
   } catch (error) {
     console.error('Chat API error:', error);
     return NextResponse.json({ 
