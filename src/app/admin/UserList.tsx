@@ -132,8 +132,8 @@ const UserList: React.FC = () => {
                 <td>{user.email}</td>
                 <td>{user.phone || 'N/A'}</td>
                 <td>
-                  <div className={`badge ${user.provider === 'google' ? 'badge-info' : 'badge-primary'}`}>
-                    {user.provider}
+                  <div className={`badge ${user.provider === 'google' ? 'badge' : 'badge'}`}>
+                    {user.provider.charAt(0).toUpperCase() + user.provider.slice(1)}
                   </div>
                 </td>
                 <td>{new Date(user.createdAt).toLocaleDateString()}</td>

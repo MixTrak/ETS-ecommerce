@@ -54,7 +54,7 @@ export default function LoginPage(): JSX.Element {
       <div className="w-full max-w-lg bg-base-100 rounded-2xl shadow-2xl p-8">
         <header className="mb-6 text-center">
           <Link href="/" className="inline-block text-3xl font-bold text-primary">
-            KKG E-Commerce
+            ETS Comunication
           </Link>
           <p className="mt-2 text-sm text-base-content/70">Sign in to your account</p>
         </header>

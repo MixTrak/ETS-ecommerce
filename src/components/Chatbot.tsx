@@ -25,7 +25,7 @@ const Chatbot: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Hello! I\'m your KKG E-Commerce assistant. I can help you with product information, pricing, and general inquiries. How can I help you today?',
+      content: 'Hello! I\'m your ETS E-Commerce assistant. I can help you with product information, pricing, and general inquiries. How can I help you today?',
       sender: 'bot',
       timestamp: new Date()
     }
@@ -89,7 +89,7 @@ const Chatbot: React.FC = () => {
         },
         body: JSON.stringify({
           message: userMessage.content,
-          context: 'KKG E-Commerce - specializing in Electronics',
+          context: 'ETS E-Commerce - specializing in Electronics',
           products: products, // Send all products for better context
           currentProducts: products.length,
           searchQuery: userMessage.content.toLowerCase() // Send the user's query for better product matching
@@ -131,7 +131,7 @@ const Chatbot: React.FC = () => {
     <>
       {/* Chat Toggle Button - Fixed to bottom right */}
       <button
-        className={`fixed bottom-6 right-6 z-50 btn btn-circle btn-primary shadow-xl transition-all duration-300 hover:scale-110 ${
+        className={`fixed bottom-6 right-6 z-50 btn btn-circle btn-blue-400 shadow-xl transition-all duration-300 hover:scale-110 ${
           isOpen ? 'rotate-180' : ''
         }`}
         onClick={() => setIsOpen(!isOpen)}
@@ -144,14 +144,14 @@ const Chatbot: React.FC = () => {
       {isOpen && (
         <div className="fixed bottom-24 right-6 z-40 w-96 h-[500px] bg-base-100 rounded-2xl shadow-2xl border border-base-300 flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-primary to-primary-focus text-primary-content p-4 rounded-t-2xl flex items-center gap-3">
+          <div className="bg-gradient-to-r from-blue-700 to-red-700 text-primary-content p-4 rounded-t-2xl flex items-center gap-3">
             <div className="avatar placeholder">
               <div className="bg-primary-content text-primary rounded-full w-10 h-10">
                 <Bot className="w-5 h-5" />
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-lg">KKG Assistant</h3>
+              <h3 className="font-bold text-lg">ETS Assistant</h3>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <p className="text-xs opacity-90">Online now</p>
@@ -167,8 +167,8 @@ const Chatbot: React.FC = () => {
                 className={`chat ${message.sender === 'user' ? 'chat-end' : 'chat-start'}`}
               >
                 {message.sender === 'bot' && (
-                  <div className="chat-image avatar">
-                    <div className="w-10 h-10 rounded-full bg-primary text-primary-content flex items-center justify-center">
+                  <div className="chat-image">
+                    <div className="w-10 h-10 rounded-full bg-blue-600 text-primary-content flex items-center justify-center">
                       <Bot className="w-5 h-5" />
                     </div>
                   </div>
@@ -176,18 +176,21 @@ const Chatbot: React.FC = () => {
                 
                 <div className={`chat-bubble ${
                   message.sender === 'user' 
-                    ? 'chat-bubble-primary' 
-                    : 'chat-bubble-base-200'
+                    ? 'chat-bubble-info' 
+                    : 'chat-bubble-info'
                 }`}>
                   {message.content}
                 </div>
                 
                 {message.sender === 'user' && (
-                  <div className="chat-image avatar">
-                    <div className="w-10 h-10 rounded-full bg-secondary text-secondary-content flex items-center justify-center">
+                  <div className='flex items-center justify-center'>
+                    <div className="chat-image">
+                    <div className="w-10 h-10 rounded-full bg-red-600 text-primary-content flex items-center justify-center">
                       <User className="w-4 h-4" />
                     </div>
                   </div>
+                  </div>
+                  
                 )}
               </div>
             ))}
@@ -200,11 +203,11 @@ const Chatbot: React.FC = () => {
                     <Bot className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="chat-bubble chat-bubble-base-200">
+                <div className="">
                   <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-base-content rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-base-content rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-base-content rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-black rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-black rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </div>

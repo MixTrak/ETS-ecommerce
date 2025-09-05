@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
       responseType = 'product_info';
     }
 
-    const systemPrompt = `You are an intelligent customer service assistant for KKG E-Commerce, specializing in Electronics and Technology products.
+    const systemPrompt = `You are an intelligent customer service assistant for ETS E-Commerce, specializing in Electronics and Technology products.
 
 Your capabilities:
 - Provide detailed information about products based on user queries
@@ -172,11 +172,15 @@ Response guidelines:
 - For availability questions, clearly state stock status
 - If no specific product matches, suggest similar products or categories
 - Direct complex issues to support
+- Avoid overly technical jargon; explain simply
+- Do not fabricate information; if unsure, admit it and suggest contacting support
+- Do not surround text with '**' or similar characters for emphasis
+- When customer Asks for recommendations, suggest top 2-3 Featured products with brief reasons
+- When customer asks about products look through the catalog and suggest up to 3 relevant products with prices and stock status
 
 Contact Information:
-- WhatsApp (Côte d'Ivoire): +225 07 87 94 22 88
-- WhatsApp (India): +91 99018 84675
-- Email: kouadioguillaumek287@gmail.com
+- WhatsApp (Côte d'Ivoire): +2250505308277
+- Email: Kouakoujohnsonyao2@gmail.com
 
 Current product catalog:${productContext}
 
@@ -235,7 +239,7 @@ Provide a helpful, accurate response based on the product information above.`;
   } catch (error) {
     console.error('Chat API error:', error);
     return NextResponse.json({ 
-      response: 'I\'m sorry, I\'m experiencing technical difficulties. Please contact our support team at +225 07 87 94 22 88 (WhatsApp) or kouadioguillaumek287@gmail.com for assistance.' 
+      response: 'I\'m sorry, I\'m experiencing technical difficulties. Please contact our support team at +2250505308277 (WhatsApp) or Kouakoujohnsonyao2@gmail.com for assistance.' 
     }, { status: 500 });
   }
 }

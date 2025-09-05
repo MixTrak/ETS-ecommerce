@@ -5,6 +5,9 @@ import { Toaster } from 'react-hot-toast';
 import Chatbot from '@/components/Chatbot';
 import "./globals.css";
 
+// 👇 Import cursor components
+import { CursorProvider, Cursor } from "@/components/cursor";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -16,10 +19,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KKG E-Commerce - Your Premium Shopping Destination",
-      description: "Discover premium Electronics products. Shop with confidence at KKG E-Commerce.",
-    keywords: "e-commerce, electronics, premium products, online shopping",
-  authors: [{ name: "Kouassi Kouadio Guillaume" }],
+  title: "ETS E-Commerce - Your Premium Shopping Destination",
+  description: "Discover premium Electronics products. Shop with confidence at ETS E-Commerce.",
+  keywords: "e-commerce, electronics, premium products, online shopping",
+  authors: [{ name: "Yao Kouakou Jonson" }],
 };
 
 export default function RootLayout({
@@ -33,7 +36,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-base-100`}
       >
         <AuthProvider>
-          {children}
+          <CursorProvider>
+            {/* Optional spotlight reveal */}
+            {/* <RevealOnCursor src="/images/product-ui.jpg" radius={200} hardness={0.4} opacity={0.9} /> */}
+            <Cursor />
+            {/* <CursorTrail /> */}
+            {children}
+          </CursorProvider>
+
           <Toaster 
             position="top-right"
             toastOptions={{

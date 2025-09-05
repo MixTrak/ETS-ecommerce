@@ -51,7 +51,7 @@ const SignupPage: React.FC = () => {
       <div className="w-full max-w-lg bg-base-100 rounded-2xl shadow-2xl p-8">
         <header className="mb-6 text-center">
           <Link href="/" className="inline-block text-3xl font-bold text-primary">
-            KKG E-Commerce
+            ETS Comunication
           </Link>
           <h2 className="mt-2 text-lg text-base-content">Create a new account</h2>
           <p className="mt-1 text-sm text-base-content/70">
