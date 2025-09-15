@@ -108,6 +108,3 @@ If you’d like to improve the UI, add new features, or fix bugs:
 3. Make your changes
 4. Submit a pull request
 
----
-
-Do you want me to also include a **"Demo Admin Credentials" section** (so people testing your site can log in as admin), or should I keep the admin panel locked down?
